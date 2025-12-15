@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
+import time
 from typing import Dict, List, Tuple
 
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 
+from .analytics import get_analytics
 from .config import DEFAULT_TEMPERATURE, GROQ_API_KEY, SUPPORTED_MODELS
 from .google_books import fetch_google_books
+from .logger import get_logger
+
+logger = get_logger()
 
 
 class BookRecommender:
@@ -76,6 +81,8 @@ class BookRecommender:
         force_refresh: bool = False,
     ) -> Tuple[str, str, List[dict]]:
         """Generate five book recommendations and the external hints used."""
+        start_time = time.time()
+        
         if not user_interest or not user_interest.strip():
             return "Please describe your interests to get recommendations.", ""
 
@@ -89,6 +96,19 @@ class BookRecommender:
         key = self._cache_key(user_interest, genre, exclude_genres, model_name, temp)
         if not force_refresh and key in self.cache:
             rec, hints, books = self.cache[key]
+            duration_ms = (time.time() - start_time) * 1000
+            logger.info(
+                "Cache hit",
+                extra={
+                    "query": user_interest[:50],
+                    "model": model_name,
+                    "cached": True,
+                    "duration_ms": round(duration_ms, 2),
+                },
+            )
+            get_analytics().track_recommendation(
+                user_interest, genre, model_name, temp, True, duration_ms, len(books)
+            )
             return rec, hints, books
 
         external = fetch_google_books(user_interest, genre)
@@ -111,6 +131,16 @@ class BookRecommender:
                 }
             )
         except Exception as exc:  # pragma: no cover - API/network issues
+            duration_ms = (time.time() - start_time) * 1000
+            logger.error(
+                f"Groq API error: {exc}",
+                extra={
+                    "query": user_interest[:50],
+                    "model": model_name,
+                    "duration_ms": round(duration_ms, 2),
+                },
+                exc_info=True,
+            )
             msg = str(exc).lower()
             if "decommissioned" in msg:
                 return (
@@ -121,6 +151,22 @@ class BookRecommender:
             return f"Groq API error: {exc}", "", external
 
         self.cache[key] = (result, external_text, external)
+        
+        duration_ms = (time.time() - start_time) * 1000
+        logger.info(
+            "Recommendation generated successfully",
+            extra={
+                "query": user_interest[:50],
+                "model": model_name,
+                "cached": False,
+                "duration_ms": round(duration_ms, 2),
+                "books_count": len(external),
+            },
+        )
+        get_analytics().track_recommendation(
+            user_interest, genre, model_name, temp, False, duration_ms, len(external)
+        )
+        
         return result, external_text, external
 
     @staticmethod
