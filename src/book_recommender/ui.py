@@ -8,21 +8,23 @@ from .recommender import BookRecommender
 
 def _render_cards(books: list[dict]) -> str:
     if not books:
-        return "<p class='label'>No Google Books hints for this query.</p>"
+        return "<div style='color: var(--muted); font-style: italic; padding: 20px; text-align: center;'>No books found for this query.</div>"
     parts = []
     for book in books:
         thumb = book.get("thumbnail", "")
         link = book.get("link", "") or "#"
         title = book.get("title", "Unknown title")
         authors = book.get("authors", "Unknown author")
-        desc = book.get("description", "")
+        desc = (book.get("description", "") or "")[:180]
         parts.append(
             "<div class='card'>"
             f"<a href='{link}' target='_blank' rel='noopener noreferrer'>"
-            + (f"<img src='{thumb}' alt='cover' />" if thumb else "")
+            + (f"<img src='{thumb}' alt='cover' />" if thumb else "<div style='height:200px;background:var(--border);'></div>")
+            + "<div>"
             + f"<h4>{title}</h4>"
-            f"<p><strong>{authors}</strong></p>"
-            + (f"<p>{desc}</p>" if desc else "")
+            f"<p style='font-weight:600;'>{authors}</p>"
+            + (f"<p>{desc}...</p>" if desc else "")
+            + "</div>"
             + "</a></div>"
         )
     return "<div class='cards'>" + "".join(parts) + "</div>"
@@ -72,7 +74,7 @@ def build_interface(recommender: BookRecommender) -> tuple[gr.Blocks, str]:
 
     with gr.Blocks() as demo:
         history_state = gr.State([])
-        gr.Markdown("<div class='pill'>HCD-first</div>", elem_id="pill-top")
+        gr.Markdown("<div class='pill'>📚 AI-Powered</div>", elem_id="pill-top")
         gr.Markdown(
             f"<div class='headline'>{APP_TITLE}</div>"
             f"<div class='subhead'>{APP_SUBTITLE}</div>"
@@ -129,9 +131,9 @@ def build_interface(recommender: BookRecommender) -> tuple[gr.Blocks, str]:
                     )
 
                 with gr.Row(elem_classes=["toolbar"]):
-                    btn = gr.Button("Recommend!", elem_classes=["btn-primary"], scale=2)
-                    btn_refresh = gr.Button("Refresh (new spin)", elem_classes=["ghost-btn"], scale=1)
-                    btn_copy = gr.Button("Copy list", elem_classes=["ghost-btn"], scale=1)
+                    btn = gr.Button("✨ Get Recommendations", elem_classes=["btn-primary"], scale=2)
+                    btn_refresh = gr.Button("🔄 New Spin", elem_classes=["ghost-btn"], scale=1)
+                    btn_copy = gr.Button("📋 Copy List", elem_classes=["ghost-btn"], scale=1)
 
                 output = gr.Markdown(label="Recommendations", value="")
                 external_view = gr.Markdown(label="Google Books hints", value="", elem_classes=["label"])
