@@ -144,8 +144,35 @@ def build_interface(recommender: BookRecommender) -> tuple[gr.Blocks, str]:
                     btn = gr.Button("✨ Get Recommendations", elem_classes=["btn-primary"], scale=2)
                     btn_refresh = gr.Button("🔄 New Spin", elem_classes=["ghost-btn"], scale=1)
                     btn_copy = gr.Button("📋 Copy List", elem_classes=["ghost-btn"], scale=1)
+                
+                with gr.Row(elem_classes=["toolbar"]):
+                    btn_export_json = gr.Button("💾 Export JSON", elem_classes=["ghost-btn"], scale=1)
+                    btn_export_pdf = gr.Button("📄 Export PDF", elem_classes=["ghost-btn"], scale=1)
+                    btn_save_list = gr.Button("⭐ Save to Reading List", elem_classes=["ghost-btn"], scale=1)
+                
+                with gr.Row(elem_classes=["toolbar"]):
+                    btn_share_twitter = gr.Button("🐦 Share", elem_classes=["ghost-btn"], scale=1)
+                    btn_share_facebook = gr.Button("📘 Share", elem_classes=["ghost-btn"], scale=1)
+                    btn_share_linkedin = gr.Button("💼 Share", elem_classes=["ghost-btn"], scale=1)
 
                 output = gr.Markdown(label="Recommendations", value="")
+                
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        rating_slider = gr.Slider(
+                            minimum=1,
+                            maximum=5,
+                            value=5,
+                            step=1,
+                            label="⭐ Rate these recommendations",
+                            info="Your feedback helps improve results",
+                        )
+                        btn_submit_rating = gr.Button("Submit Rating", elem_classes=["ghost-btn"])
+                        rating_feedback = gr.Markdown(value="", elem_classes=["status-msg"])
+                    with gr.Column(scale=1):
+                        gr.Markdown("### 📚 Your Reading List")
+                        reading_list_display = gr.HTML(value="<div id='reading-list-container'></div>")
+                
                 external_view = gr.Markdown(label="Google Books hints", value="", elem_classes=["label"])
                 cards = gr.HTML(label="Books", value="")
 
@@ -190,6 +217,136 @@ def build_interface(recommender: BookRecommender) -> tuple[gr.Blocks, str]:
                         });
                     }""",
                 )
+                
+                # Export JSON
+                btn_export_json.click(
+                    fn=None,
+                    inputs=[output, user_input],
+                    outputs=None,
+                    js="""(recs, query) => {
+                        const data = {
+                            query: query,
+                            recommendations: recs,
+                            timestamp: new Date().toISOString()
+                        };
+                        const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `book-recommendations-${Date.now()}.json`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    }""",
+                )
+                
+                # Export PDF (as formatted text)
+                btn_export_pdf.click(
+                    fn=None,
+                    inputs=[output, user_input],
+                    outputs=None,
+                    js="""(recs, query) => {
+                        const content = `BOOK RECOMMENDATIONS\n\nQuery: ${query}\n\nGenerated: ${new Date().toLocaleString()}\n\n${recs}`;
+                        const blob = new Blob([content], {type: 'text/plain'});
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `book-recommendations-${Date.now()}.txt`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    }""",
+                )
+                
+                # Save to Reading List
+                btn_save_list.click(
+                    fn=None,
+                    inputs=[output, user_input],
+                    outputs=None,
+                    js="""(recs, query) => {
+                        const item = {
+                            query: query,
+                            recommendations: recs,
+                            timestamp: new Date().toISOString(),
+                            id: Date.now()
+                        };
+                        let readingList = JSON.parse(localStorage.getItem('readingList') || '[]');
+                        readingList.unshift(item);
+                        readingList = readingList.slice(0, 20); // Keep last 20
+                        localStorage.setItem('readingList', JSON.stringify(readingList));
+                        
+                        // Update display
+                        const container = document.getElementById('reading-list-container');
+                        if (container) {
+                            container.innerHTML = readingList.map(item => 
+                                `<div class='reading-list-item'>
+                                    <strong>${item.query.substring(0, 50)}...</strong>
+                                    <br/><small>${new Date(item.timestamp).toLocaleDateString()}</small>
+                                </div>`
+                            ).join('');
+                        }
+                        
+                        const btn = event.target.closest('button');
+                        const original = btn.textContent;
+                        btn.textContent = '✅ Saved!';
+                        setTimeout(() => { btn.textContent = original; }, 2000);
+                    }""",
+                )
+                
+                # Social sharing
+                btn_share_twitter.click(
+                    fn=None,
+                    inputs=[output, user_input],
+                    outputs=None,
+                    js="""(recs, query) => {
+                        const text = `Just got amazing book recommendations for: ${query}`;
+                        const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+                        window.open(url, '_blank');
+                    }""",
+                )
+                
+                btn_share_facebook.click(
+                    fn=None,
+                    inputs=[user_input],
+                    outputs=None,
+                    js="""(query) => {
+                        const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}&quote=${encodeURIComponent('Check out these book recommendations!')}`;
+                        window.open(url, '_blank');
+                    }""",
+                )
+                
+                btn_share_linkedin.click(
+                    fn=None,
+                    inputs=[user_input],
+                    outputs=None,
+                    js="""(query) => {
+                        const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`;
+                        window.open(url, '_blank');
+                    }""",
+                )
+                
+                # Rating submission
+                btn_submit_rating.click(
+                    fn=None,
+                    inputs=[rating_slider, user_input],
+                    outputs=None,
+                    js="""(rating, query) => {
+                        const ratingData = {
+                            rating: rating,
+                            query: query,
+                            timestamp: new Date().toISOString()
+                        };
+                        let ratings = JSON.parse(localStorage.getItem('ratings') || '[]');
+                        ratings.push(ratingData);
+                        localStorage.setItem('ratings', JSON.stringify(ratings));
+                        
+                        // Show feedback
+                        const feedbackEl = document.querySelector('[data-testid="rating_feedback"] .prose');
+                        if (feedbackEl) {
+                            feedbackEl.innerHTML = `✅ Thanks! Rated ${rating}/5 stars`;
+                            setTimeout(() => { feedbackEl.innerHTML = ''; }, 3000);
+                        }
+                        return rating;
+                    }""",
+                )
 
                 btn_load.click(
                     fn=on_load_session,
@@ -207,12 +364,29 @@ def build_interface(recommender: BookRecommender) -> tuple[gr.Blocks, str]:
 
         gr.HTML("""
 <script>
+  // Theme initialization
   const radio = document.getElementById('theme-toggle');
   if (radio) {
     const checked = radio.querySelector('input:checked');
     const mode = checked ? checked.value : 'Dark';
     document.documentElement.dataset.theme = mode === 'Light' ? 'light' : 'dark';
   }
+  
+  // Load reading list from localStorage
+  setTimeout(() => {
+    const readingList = JSON.parse(localStorage.getItem('readingList') || '[]');
+    const container = document.getElementById('reading-list-container');
+    if (container && readingList.length > 0) {
+      container.innerHTML = readingList.map(item => 
+        `<div class='reading-list-item'>
+          <strong>${item.query.substring(0, 50)}...</strong>
+          <br/><small>${new Date(item.timestamp).toLocaleDateString()}</small>
+        </div>`
+      ).join('');
+    } else if (container) {
+      container.innerHTML = '<p style="color: var(--muted); font-style: italic;">No saved items yet</p>';
+    }
+  }, 500);
 </script>
 """)
 

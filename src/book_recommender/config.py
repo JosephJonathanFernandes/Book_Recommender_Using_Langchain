@@ -78,6 +78,10 @@ CSS: Final[str] = r"""
 input[type="text"], textarea, select {background: var(--panel) !important; border: 2px solid var(--border) !important; color: var(--text) !important; border-radius: 12px !important; padding: 12px !important; font-size: 14px !important;}
 input[type="text"]:focus, textarea:focus, select:focus {border-color: var(--accent) !important; outline: none !important; box-shadow: 0 0 0 3px rgba(56,189,248,0.1) !important;}
 .accordion {border: 1px solid var(--border) !important; border-radius: 12px !important; margin: 12px 0 !important;}
+.reading-list-item {background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin: 8px 0; cursor: pointer;}
+.reading-list-item:hover {background: var(--border); transform: translateX(4px);}
+.reading-list-item strong {color: var(--text) !important; display: block; margin-bottom: 4px;}
+.reading-list-item small {color: var(--muted) !important; font-size: 12px;}
 @media (max-width: 768px) {
   .panel {padding: 18px; border-radius: 16px;}
   .toolbar {flex-direction: column; align-items: stretch;}
