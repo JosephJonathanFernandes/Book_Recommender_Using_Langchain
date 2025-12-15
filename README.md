@@ -41,3 +41,4 @@ Gradio opens locally. Enter interests, pick model/temperature, and you'll see bo
 - Transparency: Google Books hints shown alongside results; no key needed.
 - Structure: modular app in `src/book_recommender/` with a thin entrypoint `book_recommender.py`.
 - Deployment: works on Hugging Face Spaces or any Python host; ensure env vars are set.
+- UX: mobile-friendly layout, light/dark toggle, copy-to-clipboard, refresh (cache-bypass) button, saved sessions, and Google Books cards with links/covers.

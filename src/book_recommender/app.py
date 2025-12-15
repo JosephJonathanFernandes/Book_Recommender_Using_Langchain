@@ -8,8 +8,8 @@ from .ui import build_interface
 def run_app() -> None:
     require_api_key()
     recommender = BookRecommender(default_model=GROQ_MODEL)
-    demo = build_interface(recommender)
-    demo.launch()
+    demo, css = build_interface(recommender)
+    demo.launch(css=css)
 
 
 __all__ = ["run_app"]

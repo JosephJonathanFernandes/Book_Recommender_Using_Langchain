@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -18,15 +18,15 @@ class BookRecommender:
     def __init__(self, default_model: str = SUPPORTED_MODELS[0], default_temperature: float = DEFAULT_TEMPERATURE) -> None:
         self.default_model = default_model
         self.default_temperature = default_temperature
-        self.cache: Dict[str, Tuple[str, str]] = {}
+        self.cache: Dict[str, Tuple[str, str, List[dict]]] = {}
 
     @staticmethod
     def _cache_key(interest: str, genre: str, exclude_genres: str, model: str, temperature: float) -> str:
         return "|".join(
             [
                 interest.strip().lower(),
-                genre.strip().lower(),
-                exclude_genres.strip().lower(),
+                (genre or "").strip().lower(),
+                (exclude_genres or "").strip().lower(),
                 model.strip().lower(),
                 f"{temperature:.2f}",
             ]
@@ -73,7 +73,8 @@ class BookRecommender:
         exclude_genres: str,
         model: str | None = None,
         temperature: float | None = None,
-    ) -> Tuple[str, str]:
+        force_refresh: bool = False,
+    ) -> Tuple[str, str, List[dict]]:
         """Generate five book recommendations and the external hints used."""
         if not user_interest or not user_interest.strip():
             return "Please describe your interests to get recommendations.", ""
@@ -86,19 +87,26 @@ class BookRecommender:
         temp = temperature if temperature is not None else self.default_temperature
 
         key = self._cache_key(user_interest, genre, exclude_genres, model_name, temp)
-        if key in self.cache:
-            return self.cache[key]
+        if not force_refresh and key in self.cache:
+            rec, hints, books = self.cache[key]
+            return rec, hints, books
 
         external = fetch_google_books(user_interest, genre)
-        external_text = "\n".join([f"- {item}" for item in external]) if external else "- No Google Books hints for this query."
+        external_text = "\n".join(
+            [
+                f"- {book['title']} by {book['authors']}"
+                + (f" — {book['description']}" if book.get("description") else "")
+                for book in external
+            ]
+        ) if external else "- No Google Books hints for this query."
 
         try:
             chain = self._build_chain(model_name, temp)
             result = chain.invoke(
                 {
                     "user_interest": user_interest.strip(),
-                    "genre": genre.strip(),
-                    "exclude_genres": exclude_genres.strip(),
+                    "genre": (genre or "").strip(),
+                    "exclude_genres": (exclude_genres or "").strip(),
                     "external_suggestions": external_text,
                 }
             )
@@ -108,11 +116,12 @@ class BookRecommender:
                 return (
                     "Selected Groq model is deprecated. Choose a supported model in the dropdown and try again.",
                     "",
+                    [],
                 )
-            return f"Groq API error: {exc}", ""
+            return f"Groq API error: {exc}", "", external
 
-        self.cache[key] = (result, external_text)
-        return result, external_text
+        self.cache[key] = (result, external_text, external)
+        return result, external_text, external
 
     @staticmethod
     def supported_models() -> list[str]:
