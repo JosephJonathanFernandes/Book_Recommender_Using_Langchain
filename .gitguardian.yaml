@@ -1,20 +1,21 @@
-instance: https://api.gitguardian.com
-api_url: https://api.gitguardian.com
-verbosity: error
-minimum_severity: medium
-ignore_detectors: []
-paths:
-  - .
-paths_ignore:
-  - .venv
-  - .git
-  - .cache_ggshield
-  - dist
-  - build
-  - __pycache__
-  - *.log
-  - *.tmp
-  - node_modules
-  - .mypy_cache
-  - .ruff_cache
-  - .pytest_cache
+version: 1
+default:
+  api_url: https://api.gitguardian.com
+  instance: default
+  minimum_severity: medium
+  verbosity: error
+  paths:
+    - .
+  paths_ignore:
+    - .venv
+    - .git
+    - .cache_ggshield
+    - dist
+    - build
+    - __pycache__
+    - "*.log"
+    - "*.tmp"
+    - node_modules
+    - .mypy_cache
+    - .ruff_cache
+    - .pytest_cache

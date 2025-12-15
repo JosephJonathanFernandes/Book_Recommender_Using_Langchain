@@ -33,6 +33,7 @@ Gradio opens locally. Enter interests, pick model/temperature, and you'll see bo
 - Lint/format: `pre-commit run --all-files` (ruff + black + hygiene hooks)
 - Tests: `pytest`
 - Secrets scanning: `pre-commit run ggshield --all-files`
+- CI: GitHub Actions runs ruff, black --check, and pytest on push/PR (Python 3.10 & 3.12)
 
 ## Notes
 - Default model: `llama-3.1-8b-instant` (change via UI or `GROQ_MODEL`).
