@@ -1,0 +1,6 @@
+-r requirements.txt
+pre-commit>=3.8,<4.0
+black>=24.10,<25.0
+ruff>=0.7,<0.8
+ggshield>=1.24,<2.0
+pytest>=8.3,<9.0

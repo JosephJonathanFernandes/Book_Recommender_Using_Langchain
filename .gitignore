@@ -1,7 +1,10 @@
-# Python
+# Byte-compiled / cache
 __pycache__/
 *.py[cod]
 *.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # Virtual environments
 .venv/
@@ -11,10 +14,19 @@ ENV/
 # Environment and secrets
 .env
 .env.*
+*.env.local
+.cache_ggshield/
 
-# OS/files
+# Build/dist
+build/
+dist/
+*.egg-info/
+
+# Tooling
+.vscode/
+.idea/
 .DS_Store
 Thumbs.db
-
-# VS Code
-.vscode/
+coverage.xml
+.coverage
+pip-wheel-metadata/
