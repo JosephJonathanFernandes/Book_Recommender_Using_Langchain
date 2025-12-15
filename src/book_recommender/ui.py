@@ -32,6 +32,10 @@ def _render_cards(books: list[dict]) -> str:
 
 def build_interface(recommender: BookRecommender) -> tuple[gr.Blocks, str]:
     def on_recommend(user_interest, genre, exclude, model, temperature, force_refresh, history):
+        # Input validation
+        if not user_interest or len(user_interest.strip()) < 3:
+            return "⚠️ Please enter at least 3 characters to describe your interests.", "", "", history, gr.Dropdown(choices=[item["label"] for item in (history or [])])
+        
         rec, hints, books = recommender.recommend(
             user_interest, genre, exclude, model, temperature, force_refresh=force_refresh
         )
@@ -93,17 +97,18 @@ def build_interface(recommender: BookRecommender) -> tuple[gr.Blocks, str]:
                     "<ul>\n"
                     "  <li>Describe vibe, pace, themes, or comps.</li>\n"
                     "  <li>Pick a genre or exclude some.</li>\n"
-                    "  <li>Adjust temperature for creativity.</li>\n"
-                    "  <li>We show Google Books hints for transparency.</li>\n"
+                    "  <li>Press <kbd>Enter</kbd> or click ✨ to submit.</li>\n"
+                    "  <li>Use 🔄 to bypass cache for fresh results.</li>\n"
                     "  <li>Spoiler-averse, NSFW-filtered, cached.</li>\n"
                     "</ul>"
                 )
 
             with gr.Column(scale=2, elem_classes=["panel"]):
                 user_input = gr.Textbox(
-                    label="Your interests",
+                    label="Your interests (min 3 chars)",
                     placeholder="e.g., hopeful solarpunk with found family and science-forward detail",
                     lines=4,
+                    info="💡 Tip: Press Enter to submit!",
                 )
                 genre_dropdown = gr.Dropdown(
                     label="Preferred genre (optional)",
@@ -114,22 +119,27 @@ def build_interface(recommender: BookRecommender) -> tuple[gr.Blocks, str]:
                     label="Exclude genres (comma separated)",
                     placeholder="e.g., grimdark, horror",
                 )
-                with gr.Row():
-                    model_dropdown = gr.Dropdown(
-                        label="Groq model",
-                        choices=recommender.supported_models(),
-                        value=recommender.default_model,
-                        scale=2,
-                    )
-                    temperature_slider = gr.Slider(
-                        minimum=0.0,
-                        maximum=1.0,
-                        value=recommender.default_temperature,
-                        step=0.05,
-                        label="Temperature",
-                        scale=1,
-                    )
+                with gr.Accordion("⚙️ Advanced Options", open=False):
+                    with gr.Row():
+                        model_dropdown = gr.Dropdown(
+                            label="Groq model",
+                            choices=recommender.supported_models(),
+                            value=recommender.default_model,
+                            scale=2,
+                            info="Choose AI model (larger = smarter but slower)",
+                        )
+                        temperature_slider = gr.Slider(
+                            minimum=0.0,
+                            maximum=1.0,
+                            value=recommender.default_temperature,
+                            step=0.05,
+                            label="Temperature",
+                            scale=1,
+                            info="Lower = focused, Higher = creative",
+                        )
 
+                status_msg = gr.Markdown(value="", elem_classes=["status-msg"])
+                
                 with gr.Row(elem_classes=["toolbar"]):
                     btn = gr.Button("✨ Get Recommendations", elem_classes=["btn-primary"], scale=2)
                     btn_refresh = gr.Button("🔄 New Spin", elem_classes=["ghost-btn"], scale=1)
@@ -142,6 +152,14 @@ def build_interface(recommender: BookRecommender) -> tuple[gr.Blocks, str]:
                 session_selector = gr.Dropdown(label="Saved sessions", choices=[], value=None)
                 btn_load = gr.Button("Load session", elem_classes=["ghost-btn"])
 
+                # Submit on Enter key
+                user_input.submit(
+                    fn=on_recommend,
+                    inputs=[user_input, genre_dropdown, exclude_genres, model_dropdown, temperature_slider, gr.State(False), history_state],
+                    outputs=[output, external_view, cards, history_state, session_selector],
+                    queue=True,
+                )
+                
                 btn.click(
                     fn=on_recommend,
                     inputs=[user_input, genre_dropdown, exclude_genres, model_dropdown, temperature_slider, gr.State(False), history_state],
@@ -159,7 +177,18 @@ def build_interface(recommender: BookRecommender) -> tuple[gr.Blocks, str]:
                     fn=None,
                     inputs=[output],
                     outputs=None,
-                    js="(text) => navigator.clipboard.writeText(text)",
+                    js="""(text) => {
+                        navigator.clipboard.writeText(text).then(() => {
+                            const btn = event.target.closest('button');
+                            const original = btn.textContent;
+                            btn.textContent = '✅ Copied!';
+                            btn.style.background = 'var(--success)';
+                            setTimeout(() => {
+                                btn.textContent = original;
+                                btn.style.background = '';
+                            }, 2000);
+                        });
+                    }""",
                 )
 
                 btn_load.click(

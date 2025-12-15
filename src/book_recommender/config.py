@@ -74,8 +74,10 @@ CSS: Final[str] = r"""
 .ghost-btn {background: var(--panel) !important; border: 1px solid var(--border) !important; color: var(--text) !important; border-radius: 12px; padding: 10px 16px; min-height: 48px; cursor: pointer; font-weight: 600;}
 .ghost-btn:hover {background: var(--border) !important; transform: translateY(-1px);}
 .ghost-btn:active {transform: translateY(0);}
+.status-msg {padding: 12px; margin: 8px 0; border-radius: 8px; font-size: 14px; text-align: center; background: rgba(125,211,252,0.1); border: 1px solid var(--accent);}
 input[type="text"], textarea, select {background: var(--panel) !important; border: 2px solid var(--border) !important; color: var(--text) !important; border-radius: 12px !important; padding: 12px !important; font-size: 14px !important;}
 input[type="text"]:focus, textarea:focus, select:focus {border-color: var(--accent) !important; outline: none !important; box-shadow: 0 0 0 3px rgba(56,189,248,0.1) !important;}
+.accordion {border: 1px solid var(--border) !important; border-radius: 12px !important; margin: 12px 0 !important;}
 @media (max-width: 768px) {
   .panel {padding: 18px; border-radius: 16px;}
   .toolbar {flex-direction: column; align-items: stretch;}
