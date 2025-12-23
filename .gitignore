@@ -1,4 +1,3 @@
-# Byte-compiled / cache
 __pycache__/
 *.py[cod]
 *.pyo
@@ -30,3 +29,13 @@ Thumbs.db
 coverage.xml
 .coverage
 pip-wheel-metadata/
+#
+# ---
+# Professional, security, and recruiter-grade ignores
+#
+# - Never commit secrets, credentials, or local config
+# - Ignore all environment, analytics, and local config files
+# - Ignore editor, build, and test artifacts
+#
+# See SECURITY.md for policy
+#
